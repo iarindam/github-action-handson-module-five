@@ -5,6 +5,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  AZURE_RESOURCE_GROUP: rg-github
+  AZURE_APP_PLAN: appplan-github
+  AZURE_WEBAPP_NAME: webappgithub
+  AZURE_LOCATION: eastus
+
 jobs:
   
   set-up-azure-resources:
@@ -20,23 +26,23 @@ jobs:
       - name: Create Azure resource group
         if: success()
         run: |
-          az group create --location ${{secrets.AZURE_LOCATION}} --name ${{secrets.AZURE_RESOURCE_GROUP}} --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
+          az group create --location ${{env.AZURE_LOCATION}} --name ${{env.AZURE_RESOURCE_GROUP}} --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
       - name: Create Azure app service plan
         if: success()
         run: |
-          az appservice plan create --resource-group ${{secrets.AZURE_RESOURCE_GROUP}} --name ${{secrets.AZURE_APP_PLAN}} --is-linux --sku F1 --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
+          az appservice plan create --resource-group ${{env.AZURE_RESOURCE_GROUP}} --name ${{env.AZURE_APP_PLAN}} --is-linux --sku F1 --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
       - name: Create webapp resource
         if: success()
         run: |
-          az webapp create --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --plan ${{ secrets.AZURE_APP_PLAN }} --name ${{ secrets.AZURE_WEBAPP_NAME }}  --deployment-container-image-name nginx --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
+          az webapp create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --plan ${{ env.AZURE_APP_PLAN }} --name ${{ env.AZURE_WEBAPP_NAME }}  --deployment-container-image-name nginx --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
       - name: Configure webapp to use GitHub Packages
         if: success()
         run: |
-          az webapp config container set --docker-custom-image-name nginx --docker-registry-server-password ${{secrets.GITHUB_TOKEN}} --docker-registry-server-url https://docker.pkg.github.com --docker-registry-server-user ${{github.actor}} --name ${{ secrets.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
+          az webapp config container set --docker-custom-image-name nginx --docker-registry-server-password ${{secrets.GITHUB_TOKEN}} --docker-registry-server-url https://docker.pkg.github.com --docker-registry-server-user ${{github.actor}} --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --subscription ${{secrets.AZURE_SUBSCRIPTION_ID}}
       - name: Azure logout
         run: |
-          az logout
-          
+          az logout  
+        
   destroy-azure-resources:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'destroy environment')
@@ -50,7 +56,7 @@ jobs:
         - name: Delete Azure resource group
           if: success()
           run: |
-            az group delete --name ${{secrets.AZURE_RESOURCE_GROUP}} --no-wait --yes
+            az group delete --name ${{env.AZURE_RESOURCE_GROUP}} --no-wait --yes
         - name: Azure logout
           run: |
             az logout
