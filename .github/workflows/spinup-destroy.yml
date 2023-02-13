@@ -1,6 +1,5 @@
 name: Configuring your Azure environment
 
-
 on:
   pull_request:
   workflow_dispatch:
